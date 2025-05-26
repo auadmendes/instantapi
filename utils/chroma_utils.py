@@ -2,6 +2,7 @@ import chromadb
 from chromadb.config import Settings
 import uuid
 import os
+import json
 
 
 
@@ -14,6 +15,14 @@ embedder = SentenceTransformer('./models/all-MiniLM-L6-v2')
 
 # Persistent storage directory
 CHROMA_DB_DIR = "chroma_db"
+
+# Ensure reproducibility
+os.environ["HF_HUB_DISABLE_SSL_VERIFICATION"] = "1"
+
+# Persistent ChromaDB storage
+
+client = chromadb.PersistentClient(path=CHROMA_DB_DIR)
+collection = client.get_or_create_collection(name="documents")
 
 client = chromadb.Client(Settings(
     persist_directory=CHROMA_DB_DIR,
@@ -80,3 +89,44 @@ def search_similar_documents(query_text, n_results=5):
             results["ids"][0], results["metadatas"][0], results["distances"][0]
         )
     ]
+
+def query_chromadb_questions(questions: list[str], n_results: int = 10) -> list[dict]:
+    results = []
+
+    for question in questions:
+        try:
+            print(f"Querying ChromaDB with the question: {question}")
+            response = collection.query(
+                query_texts=[question],
+                n_results=n_results,
+                include=["documents", "metadatas"]
+            )
+
+            print("Raw ChromaDB Results:")
+            print(json.dumps(response, indent=4))
+
+            if response.get("documents") and response.get("metadatas"):
+                documents = response["documents"][0]
+                metadatas = response["metadatas"][0]
+
+                paired_docs = list(zip(documents, metadatas))
+
+                results.append({
+                    "question": question,
+                    "documents": paired_docs
+                })
+            else:
+                results.append({
+                    "question": question,
+                    "documents": []
+                })
+
+        except Exception as e:
+            #print(f"Error querying ChromaDB: {str(e)}")
+            results.append({
+                "question": question,
+                "error": str(e),
+                "documents": []
+            })
+
+    return results
