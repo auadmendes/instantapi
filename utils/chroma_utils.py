@@ -1,9 +1,36 @@
-def simulate_save_to_chroma(chunks, metadata):
+import chromadb
+from chromadb.config import Settings
+import uuid
+import os
+
+# Persistent storage directory
+CHROMA_DB_DIR = "chroma_db"
+
+client = chromadb.Client(Settings(
+    persist_directory=CHROMA_DB_DIR,
+    anonymized_telemetry=False
+))
+
+# You can reuse the same collection name or make it dynamic
+COLLECTION_NAME = "documents"
+collection = client.get_or_create_collection(name=COLLECTION_NAME)
+
+
+def save_to_chroma(chunks, metadata):
     """
-    Simulate saving chunks to ChromaDB by printing them to the console.
+    Save the chunks and metadata to ChromaDB.
     """
-    print("\n--- Simulating Save to ChromaDB ---")
-    for i, chunk in enumerate(chunks):
-        print(f"\nChunk {i + 1}:\n{chunk[:200]}...")  # Show first 200 characters
-        print(f"Metadata: {metadata}")
-    print("\n--- End Simulation ---\n")
+    print(f"\n--- Saving to ChromaDB ({COLLECTION_NAME}) ---")
+
+    documents = chunks
+    metadatas = [metadata for _ in chunks]
+    ids = [str(uuid.uuid4()) for _ in chunks]
+
+    collection.add(
+        documents=documents,
+        metadatas=metadatas,
+        ids=ids
+    )
+
+    print(f"✅ Saved {len(chunks)} chunks to ChromaDB.")
+    print("--- End Save ---\n")

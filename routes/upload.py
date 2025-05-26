@@ -6,7 +6,7 @@ import shutil
 
 from utils.doc_utils import extract_text_from_file
 from utils.text_utils import break_text
-from utils.chroma_utils import simulate_save_to_chroma
+from utils.chroma_utils import save_to_chroma
 
 
 upload_bp = Blueprint("upload", __name__)
@@ -55,7 +55,7 @@ def upload_file():
         "source": source,
         "doc_type": doc_type,
     }
-    simulate_save_to_chroma(chunks, metadata)
+    save_to_chroma(chunks, metadata)
 
     return jsonify({
         "message": "File processed successfully",
